@@ -13,7 +13,7 @@ import imagecss from '@salesforce/resourceUrl/Imagecss';
 import { loadStyle } from 'lightning/platformResourceLoader';
 
 
-export default class Views extends NavigationMixin(LightningElement) {
+export default class DropdownViewCss extends NavigationMixin(LightningElement) {
     get options() {
         return [
             { label: 'Accordion View', value: 'Accordion View' },
@@ -23,6 +23,9 @@ export default class Views extends NavigationMixin(LightningElement) {
             { label: 'Sliding Cards', value: 'Sliding Cards'}
         ];
     }
+    @api filterField;
+    filterValue='';
+    @track filterType="data.fields.Name.dataType";
     @track showacc=false;
     @track showcard=false;
     @track first;
@@ -30,7 +33,21 @@ export default class Views extends NavigationMixin(LightningElement) {
     @track showtile=false;
     @track showflip=false;
     @track showslide=false;
+    @track loading=false;
+    handleSearchTermChange(event){
+        window.clearTimeout(this.delayTimeout);
+        const  filterValue= event.target.value;
+        this.delayTimeout=setTimeout(()=>{
+            this.loading=true;
+            this.filterValue=filterValue;
+        },300);
+    }
+
     handleChange(event) {
+        this.loading=true;
+        console.log(this.loading);
+        // alert(this.loading);
+        // setTimeout(function(){ 
         this.value = event.detail.value;
         if(this.value=='Accordion View'){
             this.showacc=true;
@@ -53,20 +70,33 @@ export default class Views extends NavigationMixin(LightningElement) {
             this.showacc=false; this.showcard=false; this.showtile=false; this.showflip=false;
             
         }
+        this.loading=false;
+        console.log(this.loading);
+    // }, 50);
+        // alert(this.loading);
     }
     //js code to display card view data starts here
     @api FieldValues;
     @track isDetailviewModal = false;
     @track pid;
     @track nameArr=[];
-    // @track fieldArr=[];
     @track multiple = true;
     @track products ;
     @track error;
-    @wire(getProductData) 
-    wiredProduct({error,data}) {
-        if (data) {
-            this.products = data;
+    @track refreshProductList;
+    
+    @wire(getProductData,{filterField:'$filterField', filterValue:'$filterValue'}) 
+    wiredProduct(results) {
+        this.loading=true;
+        // alert("hiii");
+        setTimeout(function(){ }, 3000);
+        this.refreshProductList = results;
+        if (results.data) {
+             this.delayTimeout=setTimeout(()=>{
+            setTimeout(function(){  }, 3000);
+        },3000);
+            this.nameArr=[];
+            this.products = results.data;
             if(this.FieldValues && this.products){
                 // this.nameArr=this.FieldValues.split(',');
                 for(let i of this.products){
@@ -75,7 +105,7 @@ export default class Views extends NavigationMixin(LightningElement) {
                     let productObj={
                         prodId: i.Id,
                         prodName: i.Name,
-                        prodImg: i.ProductImage__c
+                        prodImg: i.Product_Image__c
                     };
 
                     for(let j of this.FieldValues.split(',')){
@@ -95,9 +125,11 @@ export default class Views extends NavigationMixin(LightningElement) {
                 console.log(this.products);
                 
             }
-        } else if (error) {
-            this.error = error;
+        } else if (results.error) {
+            this.error = results.error;
         }
+        // alert("bye");
+        this.loading=false;
     }
 
     @api recordId;
@@ -116,7 +148,7 @@ export default class Views extends NavigationMixin(LightningElement) {
                     })
                 );
 
-                console.log("hiiii......"); refreshApex(this.products);
+                console.log("hiiii......"); refreshApex(this.refreshProductList);
                 this.isDetailShowModal = false;
                 this[NavigationMixin.Navigate]({
                     attributes: {
@@ -125,7 +157,7 @@ export default class Views extends NavigationMixin(LightningElement) {
                     },
                 });     
             })
-            .then(()=>refreshApex(this.wiredProduct))
+            .then(()=>refreshApex(this.refreshProductList)
             .catch(error => {
                 this.dispatchEvent(
                     new ShowToastEvent({
@@ -134,7 +166,7 @@ export default class Views extends NavigationMixin(LightningElement) {
                         variant: 'error'
                     })
                 );
-            });
+            }));
             // refreshApex(this.products);
             
     }
@@ -179,6 +211,7 @@ export default class Views extends NavigationMixin(LightningElement) {
 
 
     handleSuccess(event){
+        refreshApex(this.refreshProductList);
         const toastevent=new ShowToastEvent({
             title:"Product created",
             message: "Record ID: "+event.detail.id,
@@ -186,7 +219,7 @@ export default class Views extends NavigationMixin(LightningElement) {
 
         });
         this.dispatchEvent(toastevent);
-        refreshApex(this.products);
+        
         this.isShowModal = false;
         // this.delayTimeout=setTimeout(()=>{
             
@@ -219,6 +252,10 @@ export default class Views extends NavigationMixin(LightningElement) {
     }
 
     handleClickAccordion(event){
+        this.delayTimeout=setTimeout(()=>{
+            
+        },3000);
+        
         let i;
         var e=this.template.querySelectorAll('.slds-accordion__section');
         for(i=0;i<e.length;i++){
@@ -236,5 +273,17 @@ export default class Views extends NavigationMixin(LightningElement) {
     imagePath2=DELETE;
     imagePath3=BIG;
 
+
+    @track isShowModal = false;
+    showModalBox(event) {  
+        this.isShowModal = true;
+        // this.x=event.target.name;
+        // this.x=event.currentTarget.dataset.id;
+    }
+
+    hideModalBox() {  
+        refreshApex(this.refreshProductList);
+        this.isShowModal = false;
+    }
 
 }
