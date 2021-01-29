@@ -10,6 +10,7 @@
     <targetConfigs>
         <targetConfig targets="lightning__HomePage,lightning__RecordPage,lightning__AppPage">
             <property name="FieldValues" type="String" default="Name" label="Enter Comma seperated field names"/>
+            <property name="filterField" type="String" label="Enter 1 filter field"/>
         </targetConfig>
       </targetConfigs>
 </LightningComponentBundle>
